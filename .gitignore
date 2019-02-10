@@ -11,3 +11,11 @@
 /build
 /captures
 .externalNativeBuild
+/app/src/androidTest/
+/app/proguard-rules.pro
+/app/src/test/
+/.idea/gradle.xml
+/.idea/runConfigurations.xml
+/.idea/misc.xml
+/.idea/vcs.xml
+/.idea/encodings.xml
