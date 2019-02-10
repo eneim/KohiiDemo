@@ -2,9 +2,16 @@ package kohii.demo
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.net.toUri
 import androidx.recyclerview.widget.RecyclerView.Adapter
+import kohii.v1.Kohii
 
-class ItemsAdapter : Adapter<VideoViewHolder>() {
+class ItemsAdapter(val kohii: Kohii) : Adapter<VideoViewHolder>() {
+
+  companion object {
+    // Big Buck Bunny, CC3.0 license
+    val videoUri = "https://video-dev.github.io/streams/x36xhzz/x36xhzz.m3u8".toUri()
+  }
 
   override fun onCreateViewHolder(
     parent: ViewGroup,
@@ -23,7 +30,11 @@ class ItemsAdapter : Adapter<VideoViewHolder>() {
     holder: VideoViewHolder,
     position: Int
   ) {
-    // TODO actually bind stuff.
+    holder.bind(
+        kohii.setUp(videoUri)
+            .copy(tag = "$videoUri::$position")
+            .asPlayable()
+    )
   }
 
 }
