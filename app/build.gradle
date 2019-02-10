@@ -25,7 +25,16 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
   implementation 'androidx.appcompat:appcompat:1.0.2'
   implementation 'androidx.core:core-ktx:1.0.1'
-  implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+  implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha3'
+
+  implementation "androidx.coordinatorlayout:coordinatorlayout:1.1.0-alpha01"
+  implementation "androidx.recyclerview:recyclerview:1.1.0-alpha02"
+  implementation "androidx.recyclerview:recyclerview-selection:1.1.0-alpha01"
+  implementation "androidx.lifecycle:lifecycle-extensions:2.1.0-alpha02"
+  implementation "com.google.android.material:material:1.1.0-alpha03"
+
+  implementation "im.ene.kohii:kohii:1.0.0.2904-ALPHA04"
+  implementation "com.google.android.exoplayer:exoplayer:2.9.4"
 
   testImplementation 'junit:junit:4.12'
   androidTestImplementation 'androidx.test:runner:1.1.1'
