@@ -37,11 +37,16 @@ class ItemsAdapter(val kohii: Kohii) : Adapter<VideoViewHolder>() {
     holder: VideoViewHolder,
     position: Int
   ) {
-    holder.bind(
-        kohii.setUp(videoUrl)
-            .copy(tag = "$videoUrl::$position")
-            .asPlayable()
-    )
+    // This ViewHolder is selected --> we must not bind a Playable to it.
+    if (this.selectionTracker?.isSelected("$videoUrl::$position") == true) {
+      holder.bind(null)
+    } else {
+      holder.bind(
+          kohii.setUp(videoUrl)
+              .copy(tag = "$videoUrl::$position")
+              .asPlayable()
+      )
+    }
   }
 
 }

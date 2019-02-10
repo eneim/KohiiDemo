@@ -1,24 +1,53 @@
 package kohii.demo
 
 import android.os.Bundle
-import android.widget.Toast
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.motion.widget.MotionLayout
+import androidx.constraintlayout.motion.widget.MotionLayout.TransitionListener
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.selection.SelectionPredicates
 import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.selection.SelectionTracker.SelectionObserver
 import androidx.recyclerview.selection.StorageStrategy
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetBehavior.BottomSheetCallback
 import kohii.v1.Kohii
+import kohii.v1.Playback
+import kotlinx.android.synthetic.main.activity_main.bottomSheet
 import kotlinx.android.synthetic.main.activity_main.recyclerView
+import kotlinx.android.synthetic.main.activity_main.videoOverlay
+import kotlinx.android.synthetic.main.overlay_video.overlayPlayerView
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), TransitionListener {
 
   private var selectionTracker: SelectionTracker<String>? = null
+  private var overlaySheet: BottomSheetBehavior<*>? = null
+  private var playback: Playback<*>? = null
+  private var viewModel: SelectionViewModel? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
+    val kohii = Kohii[this]
+    viewModel = ViewModelProviders.of(this)
+        .get(SelectionViewModel::class.java)
+        .apply {
+          liveData.observe(this@MainActivity, Observer {
+            if (it.second) { // selected
+              overlaySheet?.state = BottomSheetBehavior.STATE_EXPANDED
+              playback = kohii.findPlayable(it.first)
+                  ?.bind(overlayPlayerView, Playback.PRIORITY_HIGH)
+                  .also { pk ->
+                    pk?.observe(this@MainActivity)
+                  }
+            }
+          })
+        }
 
-    val adapter = ItemsAdapter(Kohii[this])
+    val adapter = ItemsAdapter(kohii)
     recyclerView.adapter = adapter
 
     val keyProvider = VideoTagKeyProvider(recyclerView)
@@ -35,6 +64,42 @@ class MainActivity : AppCompatActivity() {
           it.onRestoreInstanceState(savedInstanceState)
           adapter.selectionTracker = it
         }
+
+    overlaySheet = BottomSheetBehavior.from(bottomSheet)
+        .also { sheet ->
+          if (savedInstanceState == null) sheet.state = BottomSheetBehavior.STATE_HIDDEN
+          sheet.setBottomSheetCallback(object : BottomSheetCallback() {
+            override fun onSlide(
+              bottomSheet: View,
+              slideOffset: Float
+            ) {
+              (videoOverlay as? MotionLayout)?.progress = 1 - slideOffset.coerceIn(0F, 1F)
+            }
+
+            override fun onStateChanged(
+              bottomSheet: View,
+              state: Int
+            ) {
+              if (state == BottomSheetBehavior.STATE_HIDDEN) {
+                selectionTracker?.clearSelection()
+                // Trick: we unbind a Playback if the ViewHolder of the same tag is detached.
+                // TODO [20190127] Tests:
+                // [1] No scroll --> continue playing
+                // [2] Scroll to detach but not recycled <-- FIXME need to handle this case.
+                // [3] Scroll to detach and also recycled --> need to be rebound by Adapter
+                playback?.also {
+                  (it.tag as? String)?.let { tag ->
+                    val pos = keyProvider.getPosition(tag)
+                    if (pos == RecyclerView.NO_POSITION) it.unbind() // <-- that pos is detached.
+                  }
+                }
+                playback = null
+              }
+            }
+          })
+        }
+
+    (this.videoOverlay as? MotionLayout)?.setTransitionListener(this)
   }
 
   override fun onStart() {
@@ -44,15 +109,15 @@ class MainActivity : AppCompatActivity() {
         key: String,
         selected: Boolean
       ) {
-        if (selected) {
-          Toast.makeText(this@MainActivity, "Selected: $key", Toast.LENGTH_SHORT)
-              .show()
-        } else {
-          Toast.makeText(this@MainActivity, "Unselected: $key", Toast.LENGTH_SHORT)
-              .show()
-        }
+        viewModel!!.liveData.value = Pair(key, selected)
       }
     })
+
+    // Restore selection.
+    selectionTracker?.selection?.firstOrNull()
+        ?.let {
+          viewModel!!.liveData.value = Pair(it, true)
+        }
   }
 
   override fun onSaveInstanceState(outState: Bundle) {
@@ -64,4 +129,33 @@ class MainActivity : AppCompatActivity() {
     super.onDestroy()
     recyclerView.adapter = null
   }
+
+  // MotionLayout.TransitionListener
+
+  override fun onTransitionTrigger(
+    p0: MotionLayout?,
+    p1: Int,
+    p2: Boolean,
+    p3: Float
+  ) = Unit
+
+  override fun onTransitionStarted(
+    p0: MotionLayout?,
+    p1: Int,
+    p2: Int
+  ) = Unit
+
+  override fun onTransitionChange(
+    p0: MotionLayout?,
+    p1: Int,
+    p2: Int,
+    progress: Float
+  ) {
+    overlayPlayerView.useController = progress < 0.1
+  }
+
+  override fun onTransitionCompleted(
+    p0: MotionLayout?,
+    p1: Int
+  ) = Unit
 }
