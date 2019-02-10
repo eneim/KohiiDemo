@@ -158,4 +158,24 @@ class MainActivity : AppCompatActivity(), TransitionListener {
     p0: MotionLayout?,
     p1: Int
   ) = Unit
+
+  override fun onBackPressed() {
+    if (!ignoreBackPress()) super.onBackPressed()
+  }
+
+  private fun ignoreBackPress(): Boolean {
+    return overlaySheet?.let {
+      return when {
+        it.state == BottomSheetBehavior.STATE_COLLAPSED -> {
+          it.state = BottomSheetBehavior.STATE_HIDDEN
+          true
+        }
+        it.state == BottomSheetBehavior.STATE_EXPANDED -> {
+          it.state = BottomSheetBehavior.STATE_COLLAPSED
+          true
+        }
+        else -> false
+      }
+    } ?: false
+  }
 }
