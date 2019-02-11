@@ -83,10 +83,6 @@ class MainActivity : AppCompatActivity(), TransitionListener {
               if (state == BottomSheetBehavior.STATE_HIDDEN) {
                 selectionTracker?.clearSelection()
                 // Trick: we unbind a Playback if the ViewHolder of the same tag is detached.
-                // TODO [20190127] Tests:
-                // [1] No scroll --> continue playing
-                // [2] Scroll to detach but not recycled <-- FIXME need to handle this case.
-                // [3] Scroll to detach and also recycled --> need to be rebound by Adapter
                 playback?.also {
                   (it.tag as? String)?.let { tag ->
                     val pos = keyProvider.getPosition(tag)
